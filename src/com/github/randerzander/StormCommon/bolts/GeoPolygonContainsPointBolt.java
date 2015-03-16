@@ -47,6 +47,8 @@ public class GeoPolygonContainsPointBolt implements IRichBolt {
   public void prepare(Map stormConf, TopologyContext context, OutputCollector collector){ this.collector = collector; }
 
   public void execute(Tuple tuple){
+    //System.err.println("INTERSECTION: " + tuple.getSourceComponent() + ": ");
+    //for (String field: tuple.getFields()) System.err.println(field + ": " + tuple.getStringByField(field));
     String coordinates = tuple.getStringByField(this.coordinatesField);
     String pointLat = tuple.getStringByField(this.latitudeField);
     String pointLng = tuple.getStringByField(this.longitudeField);

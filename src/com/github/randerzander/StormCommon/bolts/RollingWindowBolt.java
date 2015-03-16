@@ -43,7 +43,6 @@ public class RollingWindowBolt implements IRichBolt {
   private String format;
   private DateTimeFormatter formatter;
   private String timestampField;
-  private int timestampFieldIndex = -1;
   private int duration;
   private int maxSlots;
 
@@ -68,7 +67,8 @@ public class RollingWindowBolt implements IRichBolt {
       connection = DriverManager.getConnection(jdbcURL, new Properties());
       ResultSet rows = connection.createStatement().executeQuery("select * from " + this.table);
       this.types = Utils.getTypes(rows);
-      while (rows.next()){ this.window.add(Utils.ArrayListFromRow(rows, this.types.length)); };
+      while (rows.next()) this.window.add(Utils.ArrayListFromRow(rows, this.types.length));
+      System.err.println("WINDOW STARTUP: " + this.source + " has " + this.window.size() + " starting tuples");
       connection.close();
     }catch(Exception e){ e.printStackTrace(); throw new RuntimeException(e); }
   }
@@ -76,7 +76,7 @@ public class RollingWindowBolt implements IRichBolt {
   public boolean evict(ArrayList<Object> row, Tuple tuple){
     if (this.timestampField != null){
       DateTime now = this.formatter.parseDateTime(tuple.getStringByField(this.timestampField));
-      DateTime then = this.formatter.parseDateTime((String) row.get(this.timestampFieldIndex));
+      DateTime then = this.formatter.parseDateTime((String) row.get(tuple.fieldIndex(this.timestampField)));
       if (then.isBefore(now.minusSeconds(this.duration))) return true;
       else return false;
     }else return this.window.size() > this.maxSlots;
@@ -85,16 +85,51 @@ public class RollingWindowBolt implements IRichBolt {
   @Override
   public void execute(Tuple tuple){
     //Handle incoming window tuples
-    if (this.timestampFieldIndex == -1 && this.timestampField != null) this.timestampFieldIndex = tuple.fieldIndex(this.timestampField);
-    if (tuple.getSourceComponent().equals(this.source)){ //If this tuple is a window addition
-      for (Iterator<ArrayList<Object>> iterator = this.window.iterator(); iterator.hasNext();)
-        if (evict(iterator.next(), tuple)) iterator.remove();
+    if (tuple.getSourceComponent().equals(this.source)){
+      for (Iterator<ArrayList<Object>> iterator = this.window.iterator(); iterator.hasNext();){
+        ArrayList<Object> windowTuple = iterator.next();
+        if (evict(windowTuple, tuple)){
+          System.err.println("WINDOW EVICTION: " + this.source + " :");
+          System.err.println(windowTuple);
+          iterator.remove();
+        }
+      }
       this.window.add(new ArrayList<Object>(tuple.getValues()));
+      System.err.println("WINDOW ADDITION: " + this.source + " - from " + tuple.getSourceComponent() + ", now have " + this.window.size());
     }
     //Handle incoming events from other streams
     else{
       for (Iterator<ArrayList<Object>> iterator = this.window.iterator(); iterator.hasNext();){
-        collector.emit(tuple, new Values(Collections.addAll(tuple.getValues(), iterator.next())));
+        System.err.println("WINDOW EMISSION: " + this.source + " - from " + tuple.getSourceComponent());
+        ArrayList<Object> oldTuple = iterator.next();
+        ArrayList<Object> outTuple = new ArrayList<Object>();
+
+        //for (Object field : oldTuple) System.err.println("OLD: " + this.source + " - " + (String)field);
+        //for (String field : tuple.getFields()) System.err.println("NEW : " + this.source + " - " + field + ": " + tuple.getStringByField(field));
+
+        //Ensure output field order follows outputFields
+        String firstField = this.outputFields.get(0);
+        if (tuple.contains(firstField) && tuple.fieldIndex(firstField) == 0){
+          int i = 0;
+          for (String field: this.outputFields.toList()){
+            if (tuple.contains(field)){
+              //System.out.println("Adding " + field);
+              outTuple.add(tuple.getValueByField(field));
+            } else outTuple.add(oldTuple.get(i++));
+          }
+        }
+        else{
+          int i = 0;
+          for (String field: this.outputFields.toList()){
+            if (tuple.contains(field)){
+              //System.out.println("Adding " + field);
+              outTuple.add(tuple.getValueByField(field));
+            } else outTuple.add(oldTuple.get(i++));
+          }
+        }
+
+        //for (Object field : outTuple) System.err.println("OUT : " + this.source + " - " + (String)field);
+        collector.emit(tuple, outTuple);
       }
     }
     collector.ack(tuple);
