@@ -40,6 +40,7 @@ public class RollingWindowBolt implements IRichBolt {
   private String table;
   private ArrayList<ArrayList<Object>> window;
   private String[] types;
+  private String format;
   private DateTimeFormatter formatter;
   private String timestampField;
   private int timestampFieldIndex = -1;
@@ -52,7 +53,7 @@ public class RollingWindowBolt implements IRichBolt {
   public RollingWindowBolt withSourceFields(String[] fields){ this.sourceFields = fields; return this; }
   public RollingWindowBolt withCountRotation(int maxSlots){ this.maxSlots = maxSlots; return this; }
   public RollingWindowBolt withTimeRotation(String format, String timestampField, int duration){
-    this.formatter = DateTimeFormat.forPattern(format);
+    this.format = format;
     this.timestampField = timestampField;
     this.duration = duration;
     return this;
@@ -60,6 +61,7 @@ public class RollingWindowBolt implements IRichBolt {
   
   @Override
   public void prepare(Map stormConf, TopologyContext context, OutputCollector collector){
+    this.formatter = DateTimeFormat.forPattern(this.format);
     this.collector = collector;
     this.window = new ArrayList<ArrayList<Object>>();
     try{
