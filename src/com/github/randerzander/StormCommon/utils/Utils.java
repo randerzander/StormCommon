@@ -2,13 +2,24 @@ package com.github.randerzander.StormCommon;
 
 import backtype.storm.Constants;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 import backtype.storm.generated.KillOptions;
 import backtype.storm.generated.Nimbus.Client;
 import backtype.storm.generated.TopologySummary;
 import backtype.storm.utils.NimbusClient;
+import backtype.storm.StormSubmitter;
+import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.LocalCluster;
+import backtype.storm.Config;
 
+import java.io.FileReader;
 import java.util.HashMap;
+import java.util.Properties;
+import java.util.ArrayList;
+
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 
 public class Utils{
   public static boolean isTickTuple(Tuple tuple) {
@@ -59,4 +70,41 @@ public class Utils{
     if (props.get(prefix+"parallelism") != null) return Integer.parseInt(props.get(prefix+"parallelism"));
     else return 1;
   }
+
+  public static HashMap<String, String> getPropertiesMap(String file){
+    Properties props = new Properties();
+    try{ props.load(new FileReader(file)); }
+    catch(Exception e){ e.printStackTrace(); System.exit(-1); }
+
+    HashMap<String, String> map = new HashMap<String, String>();
+    for (final String name: props.stringPropertyNames()) map.put(name, (String)props.get(name));
+    return map;
+  }
+
+  public static void run(TopologyBuilder builder, String topologyName, Config conf, boolean killIfRunning, boolean localMode) {
+    if (killIfRunning) killTopology(topologyName);
+    if (localMode) new LocalCluster().submitTopology(topologyName, conf, builder.createTopology());
+    else{ 
+      try { StormSubmitter.submitTopologyWithProgressBar(topologyName, conf, builder.createTopology()); }
+      catch (Exception e) { e.printStackTrace(); throw new RuntimeException(e); }
+    }
+  }
+
+  public static ArrayList<Object> ArrayListFromRow(ResultSet results, int columns){
+    try{
+      ArrayList<Object> row = new ArrayList<Object>();
+      for (int i = 0; i < columns; i++) row.add(results.getObject(i+1));
+      return row;
+    }catch (Exception e) { e.printStackTrace(); throw new RuntimeException(e); }
+  }
+
+  public static String[] getTypes(ResultSet results){
+    try{
+      ResultSetMetaData md = results.getMetaData();
+      String[] types = new String[md.getColumnCount()];
+      for (int i = 0; i < types.length; i++) types[i] = md.getColumnTypeName(i+1);
+      return types;
+    }catch (Exception e) { e.printStackTrace(); throw new RuntimeException(e); }
+  }
+
 }
