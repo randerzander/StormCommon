@@ -27,7 +27,7 @@ public class SysoutBolt implements IRichBolt {
 	public void execute(Tuple tuple){
 		StringBuffer output = new StringBuffer(this.prefix + "SysoutBolt - " + new Date(System.currentTimeMillis()).toString() + " - ");
 		for (String field : tuple.getFields()){
-			output.append(field + "=" + tuple.getStringByField(field) + ", ");
+			output.append(field + "=" + tuple.getValueByField(field).toString() + ", ");
 		}
 		output.append(" no more fields");
 		System.out.println(output);
