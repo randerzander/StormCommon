@@ -22,12 +22,13 @@ public class SolrBolt implements IRichBolt {
 	private OutputCollector collector;
 	private SolrServer solrServer = null;
 	private String solrServerUrl = "";
+	private Calendar cal = null;
 
 
 	private String fixedValueFieldName = "";
 	private String fixedValueFieldValue = "";
 	private SimpleDateFormat dateFormat = null; 
-	private SimpleDateFormat solrDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'");
+	private SimpleDateFormat solrDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 	private String idFieldsDelimiter = "|";
 	
 	private Fields fieldsSubset = null;
@@ -48,13 +49,13 @@ public class SolrBolt implements IRichBolt {
     }
 
 	public void prepare(Map stormConf, TopologyContext context, OutputCollector collector){
+		cal = Calendar.getInstance();
 		this.collector = collector;
 		this.solrServer = new HttpSolrServer(this.solrServerUrl); 
 	}
 
 	public void execute(Tuple tuple) {
  
-		Calendar cal = Calendar.getInstance();
 		SolrInputDocument solrDoc = new SolrInputDocument();
 		Fields solrOutputFields = null;
 		if (fieldsSubset == null){
@@ -71,7 +72,7 @@ public class SolrBolt implements IRichBolt {
 					System.out.println("SolrBolt: Invalid date format for field: " + field + " ignoring this field for this row");
 				}
 			}else{
-				solrDoc.addField(field + getSolrTypeSuffix(tuple.getValueByField(field)), tuple.getStringByField(field));
+				solrDoc.addField(field + getSolrTypeSuffix(tuple.getValueByField(field)), tuple.getValueByField(field));
 			}
 		}
 		if (fixedValueFieldName.length() > 0 && fixedValueFieldValue.length() >0){
@@ -86,7 +87,8 @@ public class SolrBolt implements IRichBolt {
 		}
 
 		try{
-			solrServer.add(solrDoc);	
+			solrServer.add(solrDoc);
+			collector.ack(tuple);
 		} catch (Exception e) {
 			System.out.println("Error writing solr document");
 			e.printStackTrace();			
