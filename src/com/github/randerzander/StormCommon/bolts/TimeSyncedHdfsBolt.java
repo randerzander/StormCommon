@@ -1,6 +1,6 @@
 package com.github.randerzander.StormCommon.bolts;
 
-import com.github.randerzander.StormCommon.Utils;
+import com.github.randerzander.StormCommon.utils.Utils;
 
 import org.apache.storm.hdfs.bolt.AbstractHdfsBolt;
 import backtype.storm.task.OutputCollector;
@@ -27,7 +27,10 @@ import java.util.EnumSet;
 import java.util.Map;
 
 public class TimeSyncedHdfsBolt extends AbstractHdfsBolt{
-    private static final Logger LOG = LoggerFactory.getLogger(TimeSyncedHdfsBolt.class);
+    
+	private static final long serialVersionUID = -6058244566918184796L;
+
+	private static final Logger LOG = LoggerFactory.getLogger(TimeSyncedHdfsBolt.class);
 
     private transient FSDataOutputStream out;
     private RecordFormat format;
@@ -66,7 +69,6 @@ public class TimeSyncedHdfsBolt extends AbstractHdfsBolt{
         return this;
     }
 
-    @Override
     void doPrepare(Map conf, TopologyContext topologyContext, OutputCollector outputCollector) throws IOException {
         LOG.info("Preparing HDFS Bolt...");
         this.fs = FileSystem.get(URI.create(this.fsUrl), hdfsConfig);

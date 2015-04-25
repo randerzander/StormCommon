@@ -1,25 +1,22 @@
-package com.github.randerzander.StormCommon;
+package com.github.randerzander.StormCommon.utils;
 
+import java.io.FileReader;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Properties;
+
+import backtype.storm.Config;
 import backtype.storm.Constants;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
-
+import backtype.storm.LocalCluster;
+import backtype.storm.StormSubmitter;
 import backtype.storm.generated.KillOptions;
 import backtype.storm.generated.Nimbus.Client;
 import backtype.storm.generated.TopologySummary;
-import backtype.storm.utils.NimbusClient;
-import backtype.storm.StormSubmitter;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.LocalCluster;
-import backtype.storm.Config;
-
-import java.io.FileReader;
-import java.util.HashMap;
-import java.util.Properties;
-import java.util.ArrayList;
-
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+import backtype.storm.tuple.Tuple;
+import backtype.storm.utils.NimbusClient;
 
 public class Utils{
   public static boolean isTickTuple(Tuple tuple) {
