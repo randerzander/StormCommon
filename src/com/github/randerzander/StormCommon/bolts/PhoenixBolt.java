@@ -1,30 +1,24 @@
 package com.github.randerzander.StormCommon.bolts;
 
-import com.github.randerzander.StormCommon.Utils;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Arrays;
-import java.io.File;
 
 import org.apache.commons.lang3.StringUtils;
 
+import backtype.storm.Config;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
-import backtype.storm.Config;
 
-import org.apache.phoenix.jdbc.PhoenixDriver;
+import com.github.randerzander.StormCommon.utils.Utils;
 
 public class PhoenixBolt implements IRichBolt {
   private String jdbcURL;
